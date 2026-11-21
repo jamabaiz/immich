@@ -19,6 +19,7 @@ import {
   startOAuth,
   unlinkOAuthAccount,
   type AssetResponseDto,
+  type DownloadArchiveDto,
   type MemoryResponseDto,
   type PersonResponseDto,
   type ServerVersionResponseDto,
@@ -293,7 +294,14 @@ export const downloadUrl = (url: string, filename: string) => {
   URL.revokeObjectURL(url);
 };
 
-export const downloadUrlPost = (url: string, assetIds: string[], archiveName: string) => {
+export type DownloadQuality = Pick<DownloadArchiveDto, 'imageQuality' | 'videoQuality'>;
+
+export const downloadUrlPost = (
+  url: string,
+  assetIds: string[],
+  archiveName: string,
+  quality: DownloadQuality = {},
+) => {
   const form = document.createElement('form');
   form.method = 'post';
   form.action = url;
@@ -310,6 +318,14 @@ export const downloadUrlPost = (url: string, assetIds: string[], archiveName: st
   mkInput('assetIds', assetIds.join(','));
   mkInput('archiveName', archiveName);
   mkInput('edited', 'true');
+
+  if (quality.imageQuality) {
+    mkInput('imageQuality', quality.imageQuality);
+  }
+
+  if (quality.videoQuality) {
+    mkInput('videoQuality', quality.videoQuality);
+  }
 
   document.body.append(form);
   form.submit();

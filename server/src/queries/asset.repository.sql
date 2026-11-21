@@ -584,6 +584,53 @@ from
 where
   "asset"."id" in ($3)
 
+-- AssetRepository.getForArchive
+select
+  "asset"."id",
+  "originalFileName",
+  "asset_file"."path" as "editedPath",
+  "originalPath",
+  "asset"."type",
+  coalesce(
+    (
+      select
+        "asset_file"."path"
+      from
+        "asset_file"
+      where
+        "asset_file"."assetId" = "asset"."id"
+        and "asset_file"."type" = 'preview'
+        and "asset_file"."isEdited" = true
+    ),
+    (
+      select
+        "asset_file"."path"
+      from
+        "asset_file"
+      where
+        "asset_file"."assetId" = "asset"."id"
+        and "asset_file"."type" = 'preview'
+        and "asset_file"."isEdited" = false
+    )
+  ) as "previewPath",
+  (
+    select
+      "asset_file"."path"
+    from
+      "asset_file"
+    where
+      "asset_file"."assetId" = "asset"."id"
+      and "asset_file"."type" = 'encoded_video'
+      and "asset_file"."isEdited" = false
+  ) as "encodedVideoPath"
+from
+  "asset"
+  left join "asset_file" on "asset"."id" = "asset_file"."assetId"
+  and "asset_file"."isEdited" = $1
+  and "asset_file"."type" = $2
+where
+  "asset"."id" in ($3)
+
 -- AssetRepository.getForThumbnail
 select
   "asset"."originalPath",

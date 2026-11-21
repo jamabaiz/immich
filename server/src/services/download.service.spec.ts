@@ -2,10 +2,16 @@ import { BadRequestException } from '@nestjs/common';
 import { Readable } from 'node:stream';
 import { vitest } from 'vitest';
 import { DownloadResponseDto } from 'src/dtos/download.dto.js';
+import { AssetType, DownloadImageQuality, DownloadVideoQuality } from 'src/enum.js';
 import { DownloadService } from 'src/services/download.service.js';
 import { AssetFactory } from 'test/factories/asset.factory.js';
 import { authStub } from 'test/fixtures/auth.stub.js';
 import { ServiceMocks, makeStream, newTestService } from 'test/utils.js';
+
+const forArchive = <T extends object>(
+  asset: T,
+  paths: { editedPath?: string; previewPath?: string; encodedVideoPath?: string } = {},
+) => ({ previewPath: null, encodedVideoPath: null, ...asset, ...paths });
 
 const downloadResponse: DownloadResponseDto = {
   totalSize: 105_000,
@@ -39,7 +45,7 @@ describe(DownloadService.name, () => {
       const asset = AssetFactory.create();
 
       mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset.id, 'unknown-asset']));
-      mocks.asset.getForOriginals.mockResolvedValue([asset]);
+      mocks.asset.getForArchive.mockResolvedValue([forArchive(asset)]);
       mocks.storage.createZipStream.mockReturnValue(archiveMock);
 
       await expect(sut.downloadArchive(authStub.admin, { assetIds: [asset.id, 'unknown-asset'] })).resolves.toEqual({
@@ -59,14 +65,14 @@ describe(DownloadService.name, () => {
       const asset = AssetFactory.create();
 
       mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset.id]));
-      mocks.asset.getForOriginals.mockResolvedValue([asset]);
+      mocks.asset.getForArchive.mockResolvedValue([forArchive(asset)]);
       mocks.storage.createZipStream.mockReturnValue(archiveMock);
 
       await expect(sut.downloadArchive(authStub.admin, { assetIds: [asset.id], edited: false })).resolves.toEqual({
         stream: archiveMock.stream,
       });
 
-      expect(mocks.asset.getForOriginals).toHaveBeenCalledWith([asset.id], false);
+      expect(mocks.asset.getForArchive).toHaveBeenCalledWith([asset.id], false);
       expect(archiveMock.addFile).toHaveBeenCalledWith(asset.originalPath, asset.originalFileName);
     });
 
@@ -80,7 +86,7 @@ describe(DownloadService.name, () => {
       const editedPath = '/data/edited.jpg';
 
       mocks.access.asset.checkSharedLinkAccess.mockResolvedValue(new Set([asset.id]));
-      mocks.asset.getForOriginals.mockResolvedValue([{ ...asset, editedPath }]);
+      mocks.asset.getForArchive.mockResolvedValue([forArchive(asset, { editedPath })]);
       mocks.storage.createZipStream.mockReturnValue(archiveMock);
 
       await expect(
@@ -89,7 +95,7 @@ describe(DownloadService.name, () => {
         stream: archiveMock.stream,
       });
 
-      expect(mocks.asset.getForOriginals).toHaveBeenCalledWith([asset.id], true);
+      expect(mocks.asset.getForArchive).toHaveBeenCalledWith([asset.id], true);
       expect(archiveMock.addFile).toHaveBeenCalledWith(editedPath, 'foo.jpg');
     });
 
@@ -105,7 +111,7 @@ describe(DownloadService.name, () => {
 
       mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset1.id, asset2.id]));
       mocks.storage.realpath.mockRejectedValue(new Error('Could not read file'));
-      mocks.asset.getForOriginals.mockResolvedValue([asset1, asset2]);
+      mocks.asset.getForArchive.mockResolvedValue([forArchive(asset1), forArchive(asset2)]);
       mocks.storage.createZipStream.mockReturnValue(archiveMock);
 
       await expect(sut.downloadArchive(authStub.admin, { assetIds: [asset1.id, asset2.id] })).resolves.toEqual({
@@ -129,7 +135,7 @@ describe(DownloadService.name, () => {
       const asset2 = AssetFactory.create();
 
       mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset1.id, asset2.id]));
-      mocks.asset.getForOriginals.mockResolvedValue([asset1, asset2]);
+      mocks.asset.getForArchive.mockResolvedValue([forArchive(asset1), forArchive(asset2)]);
       mocks.storage.createZipStream.mockReturnValue(archiveMock);
 
       await expect(sut.downloadArchive(authStub.admin, { assetIds: [asset1.id, asset2.id] })).resolves.toEqual({
@@ -151,7 +157,7 @@ describe(DownloadService.name, () => {
       const asset2 = AssetFactory.create({ originalFileName: 'IMG_123.jpg' });
 
       mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset1.id, asset2.id]));
-      mocks.asset.getForOriginals.mockResolvedValue([asset1, asset2]);
+      mocks.asset.getForArchive.mockResolvedValue([forArchive(asset1), forArchive(asset2)]);
       mocks.storage.createZipStream.mockReturnValue(archiveMock);
 
       await expect(sut.downloadArchive(authStub.admin, { assetIds: [asset1.id, asset2.id] })).resolves.toEqual({
@@ -173,7 +179,7 @@ describe(DownloadService.name, () => {
       const asset2 = AssetFactory.create({ originalFileName: 'IMG_123.jpg' });
 
       mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset1.id, asset2.id]));
-      mocks.asset.getForOriginals.mockResolvedValue([asset1, asset2]);
+      mocks.asset.getForArchive.mockResolvedValue([forArchive(asset1), forArchive(asset2)]);
       mocks.storage.createZipStream.mockReturnValue(archiveMock);
 
       await expect(sut.downloadArchive(authStub.admin, { assetIds: [asset1.id, asset2.id] })).resolves.toEqual({
@@ -202,7 +208,7 @@ describe(DownloadService.name, () => {
       const asset = AssetFactory.create({ originalFileName: input, originalPath: '/data/library/safe.jpg' });
 
       mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset.id]));
-      mocks.asset.getForOriginals.mockResolvedValue([asset]);
+      mocks.asset.getForArchive.mockResolvedValue([forArchive(asset)]);
       mocks.storage.createZipStream.mockReturnValue(archiveMock);
 
       await expect(sut.downloadArchive(authStub.admin, { assetIds: [asset.id] })).resolves.toEqual({
@@ -228,7 +234,7 @@ describe(DownloadService.name, () => {
       });
 
       mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset1.id, asset2.id]));
-      mocks.asset.getForOriginals.mockResolvedValue([asset1, asset2]);
+      mocks.asset.getForArchive.mockResolvedValue([forArchive(asset1), forArchive(asset2)]);
       mocks.storage.createZipStream.mockReturnValue(archiveMock);
 
       await expect(sut.downloadArchive(authStub.admin, { assetIds: [asset1.id, asset2.id] })).resolves.toEqual({
@@ -249,7 +255,7 @@ describe(DownloadService.name, () => {
 
       const asset = AssetFactory.create({ originalPath: '/path/to/symlink.jpg' });
       mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([asset.id]));
-      mocks.asset.getForOriginals.mockResolvedValue([asset]);
+      mocks.asset.getForArchive.mockResolvedValue([forArchive(asset)]);
       mocks.storage.realpath.mockResolvedValue('/path/to/realpath.jpg');
       mocks.storage.createZipStream.mockReturnValue(archiveMock);
 
@@ -258,6 +264,74 @@ describe(DownloadService.name, () => {
       });
 
       expect(archiveMock.addFile).toHaveBeenCalledWith('/path/to/realpath.jpg', asset.originalFileName);
+    });
+
+    it('should return the preview and the encoded video when requested', async () => {
+      const archiveMock = {
+        addFile: vitest.fn(),
+        finalize: vitest.fn(),
+        stream: new Readable(),
+      };
+      const image = AssetFactory.create({ type: AssetType.Image, originalFileName: 'image.heic' });
+      const video = AssetFactory.create({ type: AssetType.Video, originalFileName: 'video.mov' });
+
+      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([image.id, video.id]));
+      mocks.asset.getForArchive.mockResolvedValue([
+        forArchive(image, { previewPath: '/data/thumbs/image_preview.jpeg' }),
+        forArchive(video, { encodedVideoPath: '/data/encoded-video/video.mp4' }),
+      ]);
+      mocks.storage.createZipStream.mockReturnValue(archiveMock);
+
+      await sut.downloadArchive(authStub.admin, {
+        assetIds: [image.id, video.id],
+        imageQuality: DownloadImageQuality.Preview,
+        videoQuality: DownloadVideoQuality.Encoded,
+      });
+
+      expect(archiveMock.addFile).toHaveBeenNthCalledWith(1, '/data/thumbs/image_preview.jpeg', 'image.jpeg');
+      expect(archiveMock.addFile).toHaveBeenNthCalledWith(2, '/data/encoded-video/video.mp4', 'video.mp4');
+    });
+
+    it('should return the originals when the requested versions do not exist', async () => {
+      const archiveMock = {
+        addFile: vitest.fn(),
+        finalize: vitest.fn(),
+        stream: new Readable(),
+      };
+      const image = AssetFactory.create({ type: AssetType.Image });
+      const video = AssetFactory.create({ type: AssetType.Video });
+
+      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([image.id, video.id]));
+      mocks.asset.getForArchive.mockResolvedValue([forArchive(image), forArchive(video)]);
+      mocks.storage.createZipStream.mockReturnValue(archiveMock);
+
+      await sut.downloadArchive(authStub.admin, {
+        assetIds: [image.id, video.id],
+        imageQuality: DownloadImageQuality.Preview,
+        videoQuality: DownloadVideoQuality.Encoded,
+      });
+
+      expect(archiveMock.addFile).toHaveBeenNthCalledWith(1, image.originalPath, expect.any(String));
+      expect(archiveMock.addFile).toHaveBeenNthCalledWith(2, video.originalPath, expect.any(String));
+    });
+
+    it('should only apply the video quality to videos', async () => {
+      const archiveMock = {
+        addFile: vitest.fn(),
+        finalize: vitest.fn(),
+        stream: new Readable(),
+      };
+      const image = AssetFactory.create({ type: AssetType.Image });
+
+      mocks.access.asset.checkOwnerAccess.mockResolvedValue(new Set([image.id]));
+      mocks.asset.getForArchive.mockResolvedValue([
+        forArchive(image, { previewPath: '/data/thumbs/image_preview.jpeg' }),
+      ]);
+      mocks.storage.createZipStream.mockReturnValue(archiveMock);
+
+      await sut.downloadArchive(authStub.admin, { assetIds: [image.id], videoQuality: DownloadVideoQuality.Encoded });
+
+      expect(archiveMock.addFile).toHaveBeenCalledWith(image.originalPath, expect.any(String));
     });
   });
 

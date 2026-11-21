@@ -1684,6 +1684,8 @@ export type DownloadArchiveDto = {
     assetIds: string[];
     /** Download edited asset if available */
     edited?: boolean;
+    imageQuality?: DownloadImageQuality;
+    videoQuality?: DownloadVideoQuality;
 };
 export type DownloadInfoDto = {
     /** Album ID to download */
@@ -8539,6 +8541,14 @@ export enum AssetMediaSize {
     Fullsize = "fullsize",
     Preview = "preview",
     Thumbnail = "thumbnail"
+}
+export enum DownloadImageQuality {
+    Original = "original",
+    Preview = "preview"
+}
+export enum DownloadVideoQuality {
+    Original = "original",
+    Encoded = "encoded"
 }
 export enum SourceType {
     MachineLearning = "machine-learning",

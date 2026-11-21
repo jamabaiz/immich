@@ -1189,6 +1189,19 @@ export class AssetRepository {
     return this.buildGetForOriginal(ids, isEdited).execute();
   }
 
+  @GenerateSql({ params: [[DummyValue.UUID], true] })
+  getForArchive(ids: string[], isEdited: boolean) {
+    return this.buildGetForOriginal(ids, isEdited)
+      .select('asset.type')
+      .select((eb) =>
+        eb.fn
+          .coalesce(withFilePath(eb, AssetFileType.Preview, isEdited), withFilePath(eb, AssetFileType.Preview))
+          .as('previewPath'),
+      )
+      .select((eb) => withFilePath(eb, AssetFileType.EncodedVideo).as('encodedVideoPath'))
+      .execute();
+  }
+
   @GenerateSql({ params: [DummyValue.UUID, AssetFileType.Preview, true] })
   async getForThumbnail(id: string, type: AssetFileType, isEdited: boolean) {
     return this.db

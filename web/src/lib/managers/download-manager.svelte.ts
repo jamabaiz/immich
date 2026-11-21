@@ -1,3 +1,4 @@
+import type { DownloadQuality } from '#lib/utils.ts';
 import { SvelteMap } from 'svelte/reactivity';
 
 export interface DownloadState {
@@ -5,6 +6,7 @@ export interface DownloadState {
   assetIds: string[];
   archiveName: string;
   total: number;
+  quality: DownloadQuality;
   downloaded: boolean;
 }
 
@@ -13,8 +15,8 @@ class DownloadManager {
 
   isDownloading = $derived(this.assets.size > 0);
 
-  add(key: string, url: string, assetIds: string[], archiveName: string, total: number) {
-    this.assets.set(key, { url, assetIds, archiveName, total, downloaded: false });
+  add(key: string, url: string, assetIds: string[], archiveName: string, total: number, quality: DownloadQuality = {}) {
+    this.assets.set(key, { url, assetIds, archiveName, total, quality, downloaded: false });
   }
 
   clearAll() {

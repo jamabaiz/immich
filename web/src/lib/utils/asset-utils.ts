@@ -5,7 +5,7 @@ import { eventManager } from '#lib/managers/event-manager.svelte.ts';
 import { TimelineManager } from '#lib/managers/timeline-manager/timeline-manager.svelte.ts';
 import type { TimelineAsset } from '#lib/managers/timeline-manager/types.ts';
 import { locale } from '#lib/stores/preferences.store.ts';
-import { downloadUrlPost, withError } from '#lib/utils.ts';
+import { downloadUrlPost, withError, type DownloadQuality } from '#lib/utils.ts';
 import { getByteUnitString } from '#lib/utils/byte-units.ts';
 import { getFormatter } from '#lib/utils/i18n.ts';
 import { navigate } from '#lib/utils/navigation.ts';
@@ -50,7 +50,11 @@ export const removeTag = async ({
   return assetIds;
 };
 
-export const downloadArchive = async (fileName: string, options: Omit<DownloadInfoDto, 'archiveSize'>) => {
+export const downloadArchive = async (
+  fileName: string,
+  options: Omit<DownloadInfoDto, 'archiveSize'>,
+  quality: DownloadQuality = {},
+) => {
   const archiveSize = authManager.authenticated ? authManager.preferences.download.archiveSize : undefined;
   const dto = { ...options, archiveSize };
   const [error, downloadInfo] = await withError(() => getDownloadInfo({ ...authManager.params, downloadInfoDto: dto }));
@@ -79,9 +83,9 @@ export const downloadArchive = async (fileName: string, options: Omit<DownloadIn
 
     try {
       if (downloadInfo.archives.length > 1) {
-        downloadManager.add(downloadKey, url, archive.assetIds, archiveName, archive.size);
+        downloadManager.add(downloadKey, url, archive.assetIds, archiveName, archive.size, quality);
       } else {
-        downloadUrlPost(url, archive.assetIds, archiveName);
+        downloadUrlPost(url, archive.assetIds, archiveName, quality);
         const $t = await getFormatter();
         const $locale = get(locale);
         toastManager.primary(

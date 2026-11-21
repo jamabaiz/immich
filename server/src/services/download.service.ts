@@ -8,12 +8,37 @@ import {
   DownloadInfoDto,
   DownloadResponseDto,
 } from 'src/dtos/download.dto.js';
-import { Permission } from 'src/enum.js';
+import { AssetType, DownloadImageQuality, DownloadVideoQuality, Permission } from 'src/enum.js';
 import { ImmichReadStream } from 'src/repositories/storage.repository.js';
 import { BaseService } from 'src/services/base.service.js';
 import { HumanReadableSize } from 'src/utils/bytes.js';
 import { getFileNameWithoutExtension, getFilenameExtension } from 'src/utils/file.js';
 import { getPreferences } from 'src/utils/preferences.js';
+
+type ArchiveAsset = {
+  type: AssetType;
+  originalPath: string;
+  editedPath?: string | null;
+  previewPath: string | null;
+  encodedVideoPath: string | null;
+};
+
+const getArchiveSourcePath = (
+  asset: ArchiveAsset,
+  { imageQuality = DownloadImageQuality.Original, videoQuality = DownloadVideoQuality.Original }: DownloadArchiveDto,
+) => {
+  const defaultPath = asset.editedPath || asset.originalPath;
+
+  if (asset.type === AssetType.Image && imageQuality === DownloadImageQuality.Preview) {
+    return asset.previewPath || defaultPath;
+  }
+
+  if (asset.type === AssetType.Video && videoQuality === DownloadVideoQuality.Encoded) {
+    return asset.encodedVideoPath || defaultPath;
+  }
+
+  return defaultPath;
+};
 
 @Injectable()
 export class DownloadService extends BaseService {
@@ -92,7 +117,7 @@ export class DownloadService extends BaseService {
 
     const edited = isEditedOnly(auth, dto.edited);
     const zip = this.storageRepository.createZipStream();
-    const assets = await this.assetRepository.getForOriginals(dto.assetIds, edited);
+    const assets = await this.assetRepository.getForArchive(dto.assetIds, edited);
     const assetMap = new Map(assets.map((asset) => [asset.id, asset]));
     const paths: Record<string, number> = {};
 
@@ -102,10 +127,9 @@ export class DownloadService extends BaseService {
         continue;
       }
 
-      const { originalPath, editedPath, originalFileName } = asset;
-
-      const name = getFileNameWithoutExtension(sanitize(originalFileName) || 'unnamed');
-      const extension = getFilenameExtension(editedPath || originalPath);
+      const sourcePath = getArchiveSourcePath(asset, dto);
+      const name = getFileNameWithoutExtension(sanitize(asset.originalFileName) || 'unnamed');
+      const extension = getFilenameExtension(sourcePath);
       let filename = name + extension;
 
       const count = paths[filename] || 0;
@@ -114,7 +138,7 @@ export class DownloadService extends BaseService {
         filename = `${name}+${count}${extension}`;
       }
 
-      let realpath = editedPath || originalPath;
+      let realpath = sourcePath;
 
       try {
         realpath = await this.storageRepository.realpath(realpath);

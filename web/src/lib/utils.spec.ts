@@ -1,10 +1,17 @@
 import en from '#i18n/en.json';
-import { getAssetUrl, memoryLaneTitle, semverToName } from '#lib/utils.ts';
+import { downloadUrlPost, getAssetUrl, memoryLaneTitle, semverToName } from '#lib/utils.ts';
 import { validThumbhash } from '#test/common/factories.ts';
 import { factory } from '#test/unit/factories.ts';
-import { AssetTypeEnum, MemoryType, type MemoryResponseDto } from '@immich/sdk';
+import {
+  AssetTypeEnum,
+  DownloadImageQuality,
+  DownloadVideoQuality,
+  MemoryType,
+  type MemoryResponseDto,
+} from '@immich/sdk';
 import { addMessages, init } from 'svelte-i18n';
 import { get } from 'svelte/store';
+import { vi } from 'vitest';
 
 describe('utils', () => {
   describe(getAssetUrl.name, () => {
@@ -102,6 +109,35 @@ describe('utils', () => {
 
     it('should fall back when the person has no name', () => {
       expect(birthday({ personName: undefined })).toBe('Unknown');
+    });
+  });
+
+  describe(downloadUrlPost.name, () => {
+    const submitFields = (...args: Parameters<typeof downloadUrlPost>) => {
+      let fields: Record<string, string> = {};
+      const submit = vi.spyOn(HTMLFormElement.prototype, 'submit').mockImplementation(function (this: HTMLFormElement) {
+        fields = Object.fromEntries(new FormData(this) as unknown as Iterable<[string, string]>);
+      });
+      downloadUrlPost(...args);
+      submit.mockRestore();
+      return fields;
+    };
+
+    it('should not send quality fields by default', () => {
+      expect(submitFields('/download/archive', ['a', 'b'], 'archive')).toEqual({
+        assetIds: 'a,b',
+        archiveName: 'archive',
+        edited: 'true',
+      });
+    });
+
+    it('should send the selected quality', () => {
+      expect(
+        submitFields('/download/archive', ['a'], 'archive', {
+          imageQuality: DownloadImageQuality.Preview,
+          videoQuality: DownloadVideoQuality.Encoded,
+        }),
+      ).toMatchObject({ imageQuality: 'preview', videoQuality: 'encoded' });
     });
   });
 });

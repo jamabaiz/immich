@@ -6670,6 +6670,11 @@
           {
             "version": "v2",
             "state": "Stable"
+          },
+          {
+            "version": "v3.5.0",
+            "state": "Updated",
+            "description": "Added imageQuality and videoQuality"
           }
         ],
         "x-immich-permission": "asset.download",
@@ -22542,6 +22547,12 @@
           "edited": {
             "description": "Download edited asset if available",
             "type": "boolean"
+          },
+          "imageQuality": {
+            "$ref": "#/components/schemas/DownloadImageQuality"
+          },
+          "videoQuality": {
+            "$ref": "#/components/schemas/DownloadVideoQuality"
           }
         },
         "required": [
@@ -22572,6 +22583,14 @@
           "size"
         ],
         "type": "object"
+      },
+      "DownloadImageQuality": {
+        "description": "Image version to download",
+        "enum": [
+          "original",
+          "preview"
+        ],
+        "type": "string"
       },
       "DownloadInfoDto": {
         "properties": {
@@ -22660,6 +22679,14 @@
           }
         },
         "type": "object"
+      },
+      "DownloadVideoQuality": {
+        "description": "Video version to download",
+        "enum": [
+          "original",
+          "encoded"
+        ],
+        "type": "string"
       },
       "DuplicateResolveDto": {
         "properties": {

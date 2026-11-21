@@ -11,6 +11,7 @@
   import ChangeLocation from '#lib/components/timeline/actions/ChangeLocationAction.svelte';
   import DeleteAssets from '#lib/components/timeline/actions/DeleteAssetsAction.svelte';
   import DownloadAction from '#lib/components/timeline/actions/DownloadAction.svelte';
+  import DownloadWithOptionsAction from '#lib/components/timeline/actions/DownloadWithOptionsAction.svelte';
   import FavoriteAction from '#lib/components/timeline/actions/FavoriteAction.svelte';
   import LinkLivePhotoAction from '#lib/components/timeline/actions/LinkLivePhotoAction.svelte';
   import SelectAllAssets from '#lib/components/timeline/actions/SelectAllAction.svelte';
@@ -129,6 +130,7 @@
 
       <ButtonContextMenu icon={mdiDotsVertical} title={$t('menu')}>
         <DownloadAction menuItem />
+        <DownloadWithOptionsAction />
         <ActionMenuItem action={StackActions.Stack} />
         <ActionMenuItem action={StackActions.Unstack} />
         {#if isLinkActionAvailable}

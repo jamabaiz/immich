@@ -69,6 +69,26 @@ export enum AssetFileType {
 
 export const AssetFileTypeSchema = z.enum(AssetFileType).describe('Type of file').meta({ id: 'AssetFileType' });
 
+export enum DownloadImageQuality {
+  Original = 'original',
+  Preview = 'preview',
+}
+
+export const DownloadImageQualitySchema = z
+  .enum(DownloadImageQuality)
+  .describe('Image version to download')
+  .meta({ id: 'DownloadImageQuality' });
+
+export enum DownloadVideoQuality {
+  Original = 'original',
+  Encoded = 'encoded',
+}
+
+export const DownloadVideoQualitySchema = z
+  .enum(DownloadVideoQuality)
+  .describe('Video version to download')
+  .meta({ id: 'DownloadVideoQuality' });
+
 export enum AlbumUserRole {
   Editor = 'editor',
   Owner = 'owner',

@@ -9,7 +9,7 @@
   import { fly, slide } from 'svelte/transition';
 
   const startDownload = (downloadKey: string, download: DownloadState) => {
-    downloadUrlPost(download.url, download.assetIds, download.archiveName);
+    downloadUrlPost(download.url, download.assetIds, download.archiveName, download.quality);
     downloadManager.markDownloaded(downloadKey);
   };
 

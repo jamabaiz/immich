@@ -1,5 +1,6 @@
 import { createZodDto } from 'nestjs-zod';
 import z from 'zod';
+import { DownloadImageQualitySchema, DownloadVideoQualitySchema } from 'src/enum.js';
 
 const DownloadInfoSchema = z
   .object({
@@ -46,6 +47,8 @@ const DownloadArchiveSchema = z
       .optional()
       .describe('Download edited asset if available'),
     archiveName: z.string().optional().describe('The name of the archive to download, without extension'),
+    imageQuality: DownloadImageQualitySchema.optional(),
+    videoQuality: DownloadVideoQualitySchema.optional(),
   })
   .meta({ id: 'DownloadArchiveDto' });
 
